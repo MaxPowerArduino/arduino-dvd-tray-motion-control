@@ -17,8 +17,10 @@ const int trayDebounceDelay = 50;
 const int buttonDebounceDelay = 50; 
 const int trayMoveErrorDelay = 5000; 
 const int trayReverseDelay = 500; 
-const int motorRunOpenDutyCycle = 128;
-const int motorRunCloseDutyCycle = 80;
+
+const float voltageDivider = 11;
+const float vccVoltage = 5;
+const int motorTargetVoltage = 5;
  
 boolean ledState = LOW; 
 boolean buttonState; 
@@ -39,7 +41,9 @@ boolean motorRun = LOW;
 boolean motorRunOpen = LOW; 
 boolean motorRunClose = LOW; 
 
-int motorVoltage;
+int motorVoltageRead;
+float motorVoltage;
+int motorDutyCycle;
  
 unsigned long lastButtonDebounceTime; 
 unsigned long lastTrayOpenDebounceTime; 
@@ -67,7 +71,9 @@ void loop() {
   trayOpenPinState = digitalRead(trayOpenPin); 
   trayClosedPinState = digitalRead(trayClosedPin);
   
-  motorVoltage = analogRead(motorVoltagePin);
+  motorVoltageRead = analogRead(motorVoltagePin);
+  motorVoltage = motorVoltageRead * vccVoltage / 1023 * voltageDivider;
+  motorDutyCycle = 255 * motorTargetVoltage / motorVoltage;
  
   //Button debouncen 
   if (buttonPinState != lastButtonPinState) { 
@@ -132,7 +138,7 @@ void loop() {
     motorRunOpen = HIGH; 
     digitalWrite(motorEnablePin, HIGH); 
     digitalWrite(motorRunClosePin, LOW); 
-    analogWrite(motorRunOpenPin, motorRunOpenDutyCycle); 
+    analogWrite(motorRunOpenPin, motorDutyCycle); 
     trayOpenCommand = LOW; 
  
   } 
@@ -140,7 +146,7 @@ void loop() {
     trayCommandTime = millis(); 
     motorRunClose = HIGH; 
     digitalWrite(motorEnablePin, HIGH); 
-    analogWrite(motorRunClosePin, motorRunCloseDutyCycle); 
+    analogWrite(motorRunClosePin, motorDutyCycle); 
     digitalWrite(motorRunOpenPin, LOW); 
     trayCloseCommand = LOW; 
   } 
@@ -199,7 +205,9 @@ void loop() {
     Serial.print(millis()); 
     Serial.print("\t"); 
   */ 
-    Serial.println(motorVoltagePin); 
+    Serial.print(motorDutyCycle); 
+    Serial.print("\t"); 
+    Serial.println(motorVoltage); 
    
     if (buttonState == HIGH) { 
       digitalWrite(ledPin, HIGH); 
